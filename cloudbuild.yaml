@@ -1,0 +1,7 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/even-affinity-499303-d8/cowtire-homepage', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/even-affinity-499303-d8/cowtire-homepage']
+images:
+  - 'gcr.io/even-affinity-499303-d8/cowtire-homepage'
