@@ -1,19 +1,11 @@
 {
   "hosting": {
+    "site": "cowtire-homepage",
     "public": "public",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "run": {
-          "serviceId": "cowtire-homepage",
-          "region": "asia-northeast3"
-        }
-      }
     ]
   }
 }
