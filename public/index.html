@@ -415,6 +415,7 @@ html,body{height:100%;overflow:hidden}
   .btn-add{margin-top:28px;padding:14px 26px;border-radius:999px;border:0;background:#1f7fb0;color:#fff;font-size:18px;font-weight:800;cursor:pointer;box-shadow:0 10px 22px rgba(31,127,176,.25)}
   .btn-add:hover{background:#17679a}
   .store[hidden]{display:none}
+  .store-err{grid-column:1/-1;margin:0;padding:24px;border-radius:22px;background:#fff;border:1px solid var(--line);text-align:center;font-size:18px;font-weight:700;color:#5b6f80}
   .admin-foot{margin:0}
   .bf-line{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
   .admin-foot .btn-add{margin-top:0}
@@ -659,7 +660,7 @@ html,body{height:100%;overflow:hidden}
       <h2>가까운 카우타이어 매장</h2>
       <p class="sub">매장을 누르면 지도와 상세 정보를 볼 수 있어요.</p>
 <div class="kmap2" aria-label="카우타이어 매장 위치 지도">
-  <div class="kmap-head"><b>매장 위치 지도</b><span id="kmapCount">매장 8곳 · 24시 긴급실 4곳</span></div>
+  <div class="kmap-head"><b>매장 위치 지도</b><span id="kmapCount"></span></div>
   <svg class="kmap-conn" viewBox="0 0 855 680" aria-hidden="true">
     <defs><linearGradient id="connG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ff5a36" stop-opacity=".9"/><stop offset="1" stop-color="#1f7fb0" stop-opacity=".35"/></linearGradient></defs>
     <path class="conn" d="M0,0 L0,0"/>
@@ -890,6 +891,7 @@ html,body{height:100%;overflow:hidden}
       </div>
       <div id="paneManage" style="display:none">
         <p class="note" id="manageSum"></p>
+        <button type="button" class="mbtn" id="seedBase" style="display:none">기본 매장 등록</button>
         <div id="manageList"></div>
         <div class="row"><button class="cancel" type="button" data-close>닫기</button></div>
       </div>
@@ -898,7 +900,7 @@ html,body{height:100%;overflow:hidden}
 </div>
 
 <script>
-/* 매장 지도: 보이는 매장(기본 8곳 + 추가 매장, 폐점·삭제 제외)으로 전국 점, 확대 지도 점, 밖 매장 화살표, 매장 수를 다시 그린다 */
+/* 매장 지도: 보이는 매장(homepageStores 에서 읽은 매장 중 폐점 제외)으로 전국 점, 확대 지도 점, 밖 매장 화살표, 매장 수를 다시 그린다 */
 (function(){
   var CITIES=[["오산", 127.07, 37.15], ["평택", 127.1, 36.99], ["동탄", 127.09, 37.2], ["화성", 127.04, 37.2], ["용인", 127.2, 37.24], ["수지", 127.09, 37.32], ["기흥", 127.11, 37.28], ["안양", 126.95, 37.39], ["의왕", 126.97, 37.34], ["신촌", 126.94, 37.56], ["서대문", 126.94, 37.58], ["동작", 126.96, 37.5], ["서울", 126.98, 37.57], ["인천", 126.7, 37.46], ["수원", 127.01, 37.26], ["성남", 127.14, 37.42], ["분당", 127.12, 37.38], ["고양", 126.83, 37.66], ["부천", 126.78, 37.5], ["광명", 126.86, 37.48], ["과천", 126.99, 37.43], ["군포", 126.94, 37.36], ["시흥", 126.8, 37.38], ["파주", 126.78, 37.76], ["강릉", 128.9, 37.75], ["원주", 127.92, 37.34], ["춘천", 127.73, 37.88], ["속초", 128.59, 38.21], ["대전", 127.38, 36.35], ["청주", 127.49, 36.64], ["천안", 127.15, 36.81], ["세종", 127.25, 36.48], ["대구", 128.6, 35.87], ["부산", 129.08, 35.18], ["울산", 129.31, 35.54], ["광주", 126.85, 35.16], ["전주", 127.15, 35.82], ["목포", 126.39, 34.81], ["여수", 127.66, 34.76], ["순천", 127.49, 34.95], ["포항", 129.37, 36.02], ["창원", 128.68, 35.23], ["김해", 128.88, 35.23], ["제주", 126.53, 33.5]];
   function proj(lng,lat){ return [152.9+92.8*(lng-126.98), 126.9+113.6*(37.57-lat)]; }
@@ -908,10 +910,48 @@ html,body{height:100%;overflow:hidden}
   var SVG='http://www.w3.org/2000/svg';
   function el(tag,attrs,text){ var e=document.createElementNS(SVG,tag); for(var k in attrs) e.setAttribute(k,attrs[k]); if(text!=null) e.textContent=text; return e; }
     function replaceGroup(parent,id){ var o=parent.querySelector('#'+id); if(o) o.parentNode.removeChild(o); var g=el('g',{id:id}); parent.appendChild(g); return g; }
-  window.cowGeocode=function(addr){
+  /* 주소 → 위치: 네이버 지도 JavaScript SDK 의 geocoder 로 찾는다(Client ID 만 씀, Client Secret 은 쓰지 않음).
+     SDK 불러오기·인증·검색이 실패하거나 결과가 없거나 6초 안에 답이 없으면 아래 시·군 이름 표(CITIES)로 찾는다.
+     돌려주는 값: Promise → {lat, lng, src:"naver"|"table"} 또는 못 찾으면 null. SDK 는 처음 쓸 때(관리자 저장 때)만 불러온다 */
+  var NAVER_KEY_ID="cstnj3l1uy", naverReady=null;
+  function tableGeocode(addr){
     var best=null;
     CITIES.forEach(function(c){ if(addr.indexOf(c[0])>=0 && (!best || c[0].length>best[0].length)) best=c; });
-    return best ? {lng:best[1], lat:best[2]} : null;
+    return best ? {lng:best[1], lat:best[2], src:"table"} : null;
+  }
+  function loadNaver(){
+    if(!naverReady){
+      naverReady=new Promise(function(res,rej){
+        if(window.naver && naver.maps && naver.maps.Service && naver.maps.Service.geocode) return res();
+        var s=document.createElement("script");
+        s.src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId="+NAVER_KEY_ID+"&submodules=geocoder";
+        s.onerror=function(){ rej(new Error("naver load")); };
+        /* geocoder 모듈은 maps.js 다음에 따로 내려오므로 onJSContentLoaded 까지 기다림 */
+        s.onload=function(){
+          function done(){ if(naver.maps.Service && naver.maps.Service.geocode) res(); else rej(new Error("no geocoder")); }
+          if(!window.naver || !naver.maps) return rej(new Error("no naver"));
+          if(naver.maps.jsContentLoaded) done(); else naver.maps.onJSContentLoaded=done;
+        };
+        document.head.appendChild(s);
+      });
+      naverReady.catch(function(){ naverReady=null; });
+    }
+    return naverReady;
+  }
+  function naverGeocode(addr){
+    return loadNaver().then(function(){ return new Promise(function(res,rej){
+      naver.maps.Service.geocode({query:addr}, function(status,resp){
+        var a=status===naver.maps.Service.Status.OK && resp && resp.v2 && resp.v2.addresses && resp.v2.addresses[0];
+        var lat=a ? Number(a.y) : NaN, lng=a ? Number(a.x) : NaN;
+        if(isFinite(lat) && isFinite(lng)) res({lat:lat, lng:lng, src:"naver"}); else rej(new Error("no result"));
+      });
+    }); });
+  }
+  window.cowGeocode=function(addr){
+    var t, timeout=new Promise(function(_,rej){ t=setTimeout(function(){ rej(new Error("timeout")); }, 6000); });
+    return Promise.race([naverGeocode(addr), timeout]).then(
+      function(r){ clearTimeout(t); return r; },
+      function(){ clearTimeout(t); return tableGeocode(addr); });
   };
   window.cowMap={ draw:function(stores){
     var main=document.querySelector('.kmap-svg'), zoom=document.querySelector('.kmap-zoom');
@@ -956,12 +996,17 @@ html,body{height:100%;overflow:hidden}
 </script>
 <script>
 /* 매장 카드: 누르면 네이버 지도에서 그 매장 검색 · 관리자 매장 추가·관리(수정·폐점·삭제)
-   비밀번호는 SHA-256 해시만 들고 브라우저에서 비교한다(서버 확인 아님).
-   추가한 매장(cowtire_added_stores)과 수정·폐점·삭제 상태(cowtire_store_meta)는 이 브라우저의 localStorage 에만 저장된다. */
+   매장 정보는 Firestore homepageStores 컬렉션(한 매장 = 한 문서)에 있다. 이 코드는 homepageStores 밖의 경로는 읽거나 쓰지 않는다.
+   손님 화면은 로그인 없이 REST 로 읽는다(규칙: 누구나 읽기). 쓰기는 관리자 창에서 Firebase 이메일 로그인 뒤에만 한다(규칙: 관리자 계정만 쓰기).
+   Firebase SDK 는 관리자 로그인 때만 불러오고, 로그인은 저장하지 않는다(관리자 창을 닫거나 새로고침하면 로그아웃). */
 (function(){
   var PHOTO="images/store-common.png";
-  var HASH="52a47deb5da518c891f56e35dd9424a4378ce63e2a9dd718a59074b13fa666bd";
-  var KEY="cowtire_added_stores";
+  /* Firebase 웹 설정값(공개용). 비밀번호·서버 키는 넣지 않는다 */
+  var FB={apiKey:"AIzaSyBEmltHDcMS4rbdB8qVR9Z4EtA2e-Yvnzo",authDomain:"even-affinity-499303-d8.firebaseapp.com",projectId:"even-affinity-499303-d8",storageBucket:"even-affinity-499303-d8.firebasestorage.app",messagingSenderId:"270174119804",appId:"1:270174119804:web:32dad09c34e3a128c8a6f9"};
+  var COL="homepageStores";
+  var ADMIN_EMAIL="cowtire0@cow.com";
+  var SDK="https://www.gstatic.com/firebasejs/10.12.2/";
+  /* 기본 8곳: 「기본 매장 등록」 때 homepageStores 가 비어 있을 때만 한 번 넣는다 */
   var BASE=[{"name": "카우타이어 오산점", "tel": "031-372-1711", "addr": "경기도 오산시 경기대로 612", "hours": "긴급실 24시간", "h24": true, "lat": 37.15, "lng": 127.07}, {"name": "카우타이어 평택점", "tel": "031-655-0555", "addr": "경기도 평택시 만세로 1740", "hours": "09:00 ~ 19:30 (매주 화요일 휴무)", "h24": false, "lat": 36.99, "lng": 127.1}, {"name": "카우타이어 동탄역점", "tel": "031-377-0771", "addr": "경기도 화성시 동탄구 동탄기흥로520번가길 3", "hours": "09:00 ~ 19:30", "h24": false, "lat": 37.2, "lng": 127.09}, {"name": "카우타이어 분당수지점", "tel": "031-281-7707", "addr": "경기도 용인시 기흥구 용구대로2469번길 11", "hours": "긴급실 24시간", "h24": true, "lat": 37.32, "lng": 127.09}, {"name": "카우타이어 안양중앙점", "tel": "031-385-7707", "addr": "경기도 안양시 동안구 경수대로 874", "hours": "09:00 ~ 22:00", "h24": false, "lat": 37.39, "lng": 126.95}, {"name": "카우타이어 신촌점", "tel": "02-313-7771", "addr": "서울특별시 서대문구 신촌로37길 75", "hours": "긴급실 24시간", "h24": true, "lat": 37.56, "lng": 126.94}, {"name": "카우타이어 의왕IC점", "tel": "031-462-3605", "addr": "경기도 의왕시 경수대로 269", "hours": "긴급실 24시간", "h24": true, "lat": 37.34, "lng": 126.97}, {"name": "카우타이어 동작대교점", "tel": "02-3280-8088", "addr": "서울특별시 동작구 흑석동 9-46", "hours": "09:00 ~ 19:30", "h24": false, "lat": 37.5, "lng": 126.96}];
   var grid=document.querySelector(".bstores .store-grid");
   var $=function(id){ return document.getElementById(id); };
@@ -993,49 +1038,103 @@ html,body{height:100%;overflow:hidden}
     a.appendChild(body); return a;
   }
 
-  /* 저장된 목록: 배열이 아니거나 이름·전화·주소가 글자가 아닌 줄은 버린다. 매장마다 고정 id 를 준다 */
-  var saved=[];
-  try{ saved=JSON.parse(localStorage.getItem(KEY)||"[]"); }catch(e){ saved=[]; }
-  if(!Array.isArray(saved)) saved=[];
-  saved=saved.filter(function(st){ return st && typeof st.name==="string" && typeof st.tel==="string" && typeof st.addr==="string"; });
-  saved.forEach(function(st){ if(typeof st.hours!=="string") st.hours="문의 바랍니다"; });
-  var seq=0;
-  function newId(){ return "s"+Date.now().toString(36)+(seq++); }
-  saved.forEach(function(st){ if(!st.id) st.id=newId(); });
-  /* 위치(lat·lng)가 없는 예전 저장 매장은 주소로 위치를 채운다. 못 찾으면 지도 점 없이 목록에만 나온다 */
-  saved.forEach(function(st){
-    if(typeof st.lat==="number" && typeof st.lng==="number") return;
-    var where = window.cowGeocode ? window.cowGeocode(st.addr) : null;
-    if(where){ st.lat=where.lat; st.lng=where.lng; }
-  });
-  function persistSaved(){ try{ localStorage.setItem(KEY, JSON.stringify(saved)); return true; }catch(e){ return false; } }
-  persistSaved();
-
-  /* 매장 상태: 폐점(목록·지도에서 숨김, 정보 보관) · 삭제 · 수정(고친 뒤 값 전체를 edit 에 보관, 원래 값은 그대로 둠). 기본 8곳도 같은 방식 */
-  var META_KEY="cowtire_store_meta";
-  var meta={};
-  try{ meta=JSON.parse(localStorage.getItem(META_KEY)||"{}"); }catch(e){ meta={}; }
-  if(!meta||typeof meta!=="object") meta={};
-  function mOf(id){ return meta[id]||{}; }
-  function persistMeta(){ try{ localStorage.setItem(META_KEY, JSON.stringify(meta)); }catch(e){} }
-  function setMeta(id,patch){ var m=meta[id]||{}; for(var k in patch) m[k]=patch[k]; meta[id]=m; persistMeta(); }
-  /* 기본 매장 id 는 "b"+순번, 추가한 매장은 저장 시 받은 id (id 없는 예전 저장분은 불러올 때 받은 id) */
-  function eff(st,id){ var o=Object.assign({}, st, mOf(id).edit||{}); o.id=id; return o; }
-  function allStores(){
-    return BASE.map(function(st,i){ return eff(st,"b"+i); })
-      .concat(saved.map(function(st){ return eff(st,st.id); }))
-      .filter(function(st){ return !mOf(st.id).deleted; });
+  /* 읽기: homepageStores 전체를 REST 로 읽는다(쪽 나눔 따라감). 이름·전화·주소가 글자가 아닌 문서는 버린다 */
+  var stores=[], loaded=false, loadFailed=false;
+  function val(f){
+    if(!f) return undefined;
+    if("stringValue" in f) return f.stringValue;
+    if("booleanValue" in f) return f.booleanValue;
+    if("doubleValue" in f) return Number(f.doubleValue);
+    if("integerValue" in f) return Number(f.integerValue);
+    return undefined;
   }
-  function visibleStores(){ return allStores().filter(function(st){ return !mOf(st.id).closed; }); }
+  function fromDoc(d){
+    var f=d.fields||{}, st={ id:d.name.split("/").pop() };
+    ["name","tel","addr","hours","h24","lat","lng","closed"].forEach(function(k){ st[k]=val(f[k]); });
+    if(typeof st.name!=="string" || typeof st.tel!=="string" || typeof st.addr!=="string") return null;
+    if(typeof st.hours!=="string" || !st.hours) st.hours="문의 바랍니다";
+    st.h24 = st.h24===true; st.closed = st.closed===true;
+    return st;
+  }
+  function fetchStores(){
+    var base="https://firestore.googleapis.com/v1/projects/"+FB.projectId+"/databases/(default)/documents/"+COL+"?pageSize=300&key="+FB.apiKey;
+    var out=[];
+    function page(token){
+      return fetch(base+(token?"&pageToken="+encodeURIComponent(token):""), {cache:"no-store"}).then(function(r){
+        if(!r.ok) throw new Error("HTTP "+r.status);
+        return r.json();
+      }).then(function(j){
+        (j.documents||[]).forEach(function(d){ var st=fromDoc(d); if(st) out.push(st); });
+        return j.nextPageToken ? page(j.nextPageToken) : out;
+      });
+    }
+    return page(null);
+  }
+  /* 서버에서 다시 읽어 목록·지도·숫자를 다시 그림. 처음 읽기부터 실패하면 「매장 정보를 불러오지 못했습니다」, 한 번 읽은 뒤 실패하면 앞서 읽은 목록을 그대로 둠 */
+  function reload(){
+    return fetchStores().then(function(list){
+      stores=list; loaded=true; loadFailed=false; redraw(); return true;
+    }, function(){
+      loadFailed=true; redraw(); return false;
+    });
+  }
+  function visibleStores(){ return stores.filter(function(st){ return !st.closed; }); }
 
-  var paneAdd=$("paneAdd"), paneManage=$("paneManage"), paneEdit=$("paneEdit"), manageList=$("manageList"), manageSum=$("manageSum");
+  function redraw(){
+    while(grid.firstChild) grid.removeChild(grid.firstChild);
+    if(loadFailed && !loaded){
+      var p=document.createElement("p"); p.className="store-err"; p.textContent="매장 정보를 불러오지 못했습니다"; grid.appendChild(p);
+      if(window.cowMap) window.cowMap.draw([]);
+      var cnt=$("kmapCount"); if(cnt) cnt.textContent="매장 정보를 불러오지 못했습니다";
+      return;
+    }
+    var show=visibleStores();
+    show.forEach(function(st){ grid.appendChild(render(st)); });
+    if(window.cowMap) window.cowMap.draw(show);
+    if(window.cowReapplyFilter) window.cowReapplyFilter();
+  }
+
+  /* 관리자: Firebase SDK(app·auth·firestore)를 처음 로그인할 때 한 번만 불러온다 */
+  var fbReady=null, auth=null, db=null;
+  function loadScript(src){ return new Promise(function(res,rej){ var s=document.createElement("script"); s.src=src; s.onload=res; s.onerror=function(){ rej(new Error("load "+src)); }; document.head.appendChild(s); }); }
+  function firebaseReady(){
+    if(!fbReady){
+      fbReady=loadScript(SDK+"firebase-app-compat.js")
+        .then(function(){ return Promise.all([loadScript(SDK+"firebase-auth-compat.js"), loadScript(SDK+"firebase-firestore-compat.js")]); })
+        .then(function(){
+          var app=firebase.apps.length ? firebase.app() : firebase.initializeApp(FB);
+          auth=app.auth(); db=app.firestore();
+          return auth.setPersistence(firebase.auth.Auth.Persistence.NONE);
+        });
+      fbReady.catch(function(){ fbReady=null; });
+    }
+    return fbReady;
+  }
+  function col(){ return db.collection(COL); }
+  /* 한 문서에 넣는 필드는 name·tel·addr·hours·h24·lat·lng·closed·updatedAt 뿐 */
+  function docData(v,closed){
+    return { name:v.name, tel:v.tel, addr:v.addr, hours:v.hours, h24:!!v.h24, lat:v.lat, lng:v.lng, closed:!!closed, updatedAt:firebase.firestore.FieldValue.serverTimestamp() };
+  }
+
+  var paneAdd=$("paneAdd"), paneManage=$("paneManage"), paneEdit=$("paneEdit"), manageList=$("manageList"), manageSum=$("manageSum"), seedBtn=$("seedBase");
   function el(tag,cls,text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+  var busy=false;
+  /* 쓰기 하나가 끝날 때까지 관리자 창 버튼을 막아 두 번 저장되지 않게 */
+  function setBusy(on){ busy=on; $("stepForm").querySelectorAll("button").forEach(function(b){ b.disabled=on; }); }
+  function write(p, errEl){
+    setBusy(true); if(errEl) errEl.textContent="";
+    return p.then(function(){ return reload(); }).then(function(){ setBusy(false); return true; }, function(){
+      setBusy(false); if(errEl) errEl.textContent="저장하지 못했습니다. 다시 시도해 주세요."; return false;
+    });
+  }
   function renderManage(){
     if(!manageList) return;
     while(manageList.firstChild) manageList.removeChild(manageList.firstChild);
-    var list=allStores(), openN=0;
-    list.forEach(function(st){
-      var id=st.id, closed=!!mOf(id).closed; if(!closed) openN++;
+    seedBtn.style.display = (loaded && stores.length===0) ? "" : "none";
+    if(!loaded){ manageSum.textContent="매장 정보를 불러오지 못했습니다"; return; }
+    var openN=0;
+    stores.forEach(function(st){
+      var id=st.id, closed=st.closed; if(!closed) openN++;
       var row=el('div','mrow');
       var mt=el('div','mt'); mt.appendChild(el('b',null,st.name)); mt.appendChild(el('small',null,st.addr)); row.appendChild(mt);
       row.appendChild(el('span', closed?'pill off':'pill', closed?'폐점':'영업 중'));
@@ -1043,7 +1142,9 @@ html,body{height:100%;overflow:hidden}
       bEdit.addEventListener('click', function(){ openEdit(st); });
       row.appendChild(bEdit);
       var bRe=el('button','mbtn', closed?'영업 재개':'폐점'); bRe.type='button';
-      bRe.addEventListener('click', function(){ setMeta(id,{closed:!closed}); redraw(); renderManage(); });
+      bRe.addEventListener('click', function(){
+        write(col().doc(id).update({ closed:!closed, updatedAt:firebase.firestore.FieldValue.serverTimestamp() }), manageSum).then(renderManage);
+      });
       row.appendChild(bRe);
       var bDel=el('button','mbtn','삭제'); bDel.type='button';
       bDel.addEventListener('click', function(){
@@ -1052,16 +1153,13 @@ html,body{height:100%;overflow:hidden}
           setTimeout(function(){ if(bDel.dataset.sure==='1'){ bDel.dataset.sure=''; bDel.textContent='삭제'; bDel.classList.remove('danger'); } }, 4000);
           return;
         }
-        if(saved.some(function(x){ return x.id===id; })){
-          saved=saved.filter(function(x){ return x.id!==id; }); persistSaved();
-          delete meta[id]; persistMeta();
-        } else { setMeta(id,{deleted:true}); }
-        redraw(); renderManage();
+        bDel.dataset.sure='';
+        write(col().doc(id).delete(), manageSum).then(renderManage);
       });
       row.appendChild(bDel);
       manageList.appendChild(row);
     });
-    manageSum.textContent='영업 중 '+openN+'곳 · 폐점 '+(list.length-openN)+'곳 (폐점은 목록과 지도에서 빠집니다)';
+    manageSum.textContent='영업 중 '+openN+'곳 · 폐점 '+(stores.length-openN)+'곳 (폐점은 목록과 지도에서 빠집니다)';
   }
   function showPane(t){
     $("tabAdd").classList.toggle('on', t==='add');
@@ -1072,7 +1170,20 @@ html,body{height:100%;overflow:hidden}
     if(t==='manage') renderManage();
   }
   $("tabAdd").addEventListener('click', function(){ showPane('add'); });
-  $("tabManage").addEventListener('click', function(){ showPane('manage'); });
+  $("tabManage").addEventListener('click', function(){ showPane('manage'); reload().then(function(){ if(paneManage.style.display!=='none') renderManage(); }); });
+
+  /* 기본 매장 등록: 누를 때 서버에서 다시 읽어 homepageStores 가 비어 있을 때만 8곳을 한 번에(batch) 넣는다 */
+  seedBtn.addEventListener('click', function(){
+    setBusy(true); manageSum.textContent="";
+    fetchStores().then(function(list){
+      if(list.length) return null;
+      var batch=db.batch();
+      BASE.forEach(function(st){ batch.set(col().doc(), docData(st,false)); });
+      return batch.commit();
+    }).then(function(){ return reload(); }).then(function(){ setBusy(false); renderManage(); }, function(){
+      setBusy(false); manageSum.textContent="저장하지 못했습니다. 다시 시도해 주세요.";
+    });
+  });
 
   /* 수정 */
   var editingId=null;
@@ -1084,30 +1195,24 @@ html,body{height:100%;overflow:hidden}
   }
   $("editCancel").addEventListener('click', function(){ showPane('manage'); });
   $("editSave").addEventListener('click', function(){
-    var cur=allStores().filter(function(x){ return x.id===editingId; })[0];
+    if(busy) return;
+    var cur=stores.filter(function(x){ return x.id===editingId; })[0];
     if(!cur){ showPane('manage'); return; }
     var v={ name:$("eName").value.trim(), tel:$("eTel").value.trim(), addr:$("eAddr").value.trim(), hours:$("eHours").value.trim(), h24:$("eH24").checked };
     var err=$("editErr");
     if(!v.name||!v.tel||!v.addr){ err.textContent="매장명, 전화번호, 주소는 꼭 입력해 주세요."; return; }
     if(!v.hours) v.hours="문의 바랍니다";
-    if(v.addr===cur.addr && typeof cur.lat==="number"){ v.lat=cur.lat; v.lng=cur.lng; }
-    else {
-      var where = window.cowGeocode ? window.cowGeocode(v.addr) : null;
+    /* 주소가 그대로면 위치도 그대로, 바뀌었으면 다시 찾음(찾는 동안 버튼을 막음) */
+    var keep = v.addr===cur.addr && typeof cur.lat==="number" && typeof cur.lng==="number";
+    setBusy(true); err.textContent="";
+    (keep ? Promise.resolve({lat:cur.lat, lng:cur.lng}) : window.cowGeocode(v.addr)).then(function(where){
+      setBusy(false);
+      if(!modal.classList.contains("open")) return;
       if(!where){ err.textContent="주소에서 위치를 찾지 못했어요. 시·군 이름이 들어가게 다시 적어 주세요."; return; }
       v.lat=where.lat; v.lng=where.lng;
-    }
-    setMeta(editingId,{edit:v});
-    redraw(); showPane('manage');
+      write(col().doc(editingId).update(docData(v,cur.closed)), err).then(function(ok){ if(ok) showPane('manage'); });
+    });
   });
-
-  function redraw(){
-    while(grid.firstChild) grid.removeChild(grid.firstChild);
-    var show=visibleStores();
-    show.forEach(function(st){ grid.appendChild(render(st)); });
-    if(window.cowMap) window.cowMap.draw(show);
-    if(window.cowReapplyFilter) window.cowReapplyFilter();
-  }
-  redraw();
 
   var modal=$("adminModal"), stepPw=$("stepPw"), stepForm=$("stepForm");
   var fields=["fName","fTel","fAddr","fHours"];
@@ -1118,42 +1223,53 @@ html,body{height:100%;overflow:hidden}
     fields.forEach(function(id){ $(id).value=""; }); $("fH24").checked=false;
     modal.classList.add("open"); setTimeout(function(){ $("adminPw").focus(); },50);
   }
-  function close(){ modal.classList.remove("open"); }
+  /* 창을 닫으면 로그아웃 (다음에 열 때 다시 로그인) */
+  function close(){ modal.classList.remove("open"); if(auth && auth.currentUser) auth.signOut(); }
   $("btnAddStore").addEventListener("click", open);
   modal.querySelectorAll("[data-close]").forEach(function(b){ b.addEventListener("click", close); });
   modal.addEventListener("click", function(e){ if(e.target===modal) close(); });
   document.addEventListener("keydown", function(e){ if(e.key==="Escape" && modal.classList.contains("open")) close(); });
 
-  async function sha256(t){
-    var d=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t));
-    return Array.from(new Uint8Array(d)).map(function(x){ return x.toString(16).padStart(2,"0"); }).join("");
-  }
-
-  $("pwOk").addEventListener("click", async function(){
-    var err=$("pwErr");
-    try{
-      var h=await sha256($("adminPw").value);
-      if(h===HASH){ $("adminPw").value=""; stepPw.style.display="none"; stepForm.style.display=""; $("fName").focus(); }
-      else{ err.textContent="비밀번호가 맞지 않습니다."; }
-    }catch(e){ err.textContent="이 환경에서는 비밀번호 확인을 할 수 없습니다."; }
+  /* 로그인: 관리자 계정 + 입력한 비밀번호로 Firebase 이메일 로그인. 성공할 때만 매장 추가/관리 화면 */
+  var signingIn=false;
+  $("pwOk").addEventListener("click", function(){
+    if(signingIn) return;
+    var err=$("pwErr"), pw=$("adminPw").value;
+    err.textContent="";
+    if(!pw){ err.textContent="비밀번호가 맞지 않습니다."; return; }
+    signingIn=true; $("pwOk").disabled=true;
+    firebaseReady().then(function(){ return auth.signInWithEmailAndPassword(ADMIN_EMAIL, pw); }).then(function(){
+      signingIn=false; $("pwOk").disabled=false;
+      if(!modal.classList.contains("open")){ auth.signOut(); return; }
+      $("adminPw").value=""; stepPw.style.display="none"; stepForm.style.display=""; $("fName").focus();
+    }, function(e){
+      signingIn=false; $("pwOk").disabled=false;
+      var code=e && e.code || "";
+      if(code==="auth/wrong-password" || code==="auth/invalid-credential" || code==="auth/invalid-login-credentials" || code==="auth/user-not-found") err.textContent="비밀번호가 맞지 않습니다.";
+      else if(code==="auth/too-many-requests") err.textContent="로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.";
+      else err.textContent="로그인하지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    });
   });
   $("adminPw").addEventListener("keydown", function(e){ if(e.key==="Enter") $("pwOk").click(); });
 
   $("formSave").addEventListener("click", function(){
+    if(busy) return;
     var st={ name:$("fName").value.trim(), tel:$("fTel").value.trim(), addr:$("fAddr").value.trim(), hours:$("fHours").value.trim(), h24:$("fH24").checked };
     var err=$("formErr");
     if(!st.name||!st.tel||!st.addr){ err.textContent="매장명, 전화번호, 주소는 꼭 입력해 주세요."; return; }
     if(!st.hours) st.hours="문의 바랍니다";
-    var where = window.cowGeocode ? window.cowGeocode(st.addr) : null;
-    if(!where){ err.textContent="주소에서 위치를 찾지 못했어요. 시·군 이름이 들어가게 다시 적어 주세요."; return; }
-    st.lat=where.lat; st.lng=where.lng;
-    st.id=newId();
-    saved.push(st);
-    try{ localStorage.setItem(KEY, JSON.stringify(saved)); }
-    catch(e){ saved.pop(); err.textContent="이 브라우저에 저장할 수 없습니다."; return; }
-    redraw();
-    close();
+    /* 주소로 위치를 찾은 뒤에만 저장(찾는 동안 버튼을 막음) */
+    setBusy(true); err.textContent="";
+    window.cowGeocode(st.addr).then(function(where){
+      setBusy(false);
+      if(!modal.classList.contains("open")) return;
+      if(!where){ err.textContent="주소에서 위치를 찾지 못했어요. 시·군 이름이 들어가게 다시 적어 주세요."; return; }
+      st.lat=where.lat; st.lng=where.lng;
+      write(col().add(docData(st,false)), err).then(function(ok){ if(ok) close(); });
+    });
   });
+
+  reload();
 })();
 </script>
 
