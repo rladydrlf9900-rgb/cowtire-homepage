@@ -338,7 +338,7 @@ html,body{height:100%;overflow:hidden}
   /* 좁은 화면: 메뉴 글자는 숨기고 카우타이어 마크와 알약 버튼 둘만 남김 (로고가 없어 상단 줄이 비지 않도록) */
   @media (max-width:1000px){
     .top .menu{display:flex;gap:8px}
-    .top .menu a:not(.cta):not(.urgent):not(.menu-mark){display:none}
+    .top .menu a:not(.cta):not(.urgent):not(.menu-mark):not(.m-name){display:none}
     .top .menu a.menu-mark{width:44px;height:44px}
     .top .menu a.cta,.top .menu a.urgent{font-size:15px;padding:6px 12px;white-space:nowrap}
   }
@@ -354,6 +354,103 @@ html,body{height:100%;overflow:hidden}
   @media (max-width:359px){
     .top .menu a.menu-mark{width:34px;height:34px}
     .top .menu a.cta,.top .menu a.urgent{font-size:12px;padding:6px 5px}
+  }
+
+  /* ===== 휴대폰 첫 화면: 마스코트 + 큰 버튼 4개만 (600px 이하). PC·태블릿은 기존 히어로 그대로 ===== */
+  .m-home,.top .menu a.m-name,.m-chips,.m-acts,.m-near,.m-near-msg,.m-dist{display:none}
+  @media (max-width:600px){
+    /* 매장 위치 지도: 항상 펼침. 서울·경기만 화면 폭에 맞춰 낮게 (.bstores 를 붙여 아래 .kmap 기본 규칙보다 우선) */
+    .bstores .kmap2{height:auto;max-width:none;margin:6px 0 0;padding:6px;border-radius:12px;box-shadow:none}
+    .bstores .kmap-conn,.bstores .kmap-inset-tag{display:none}
+    /* 전국 지도는 안 보이게만 함: 색(그라데이션) 정의가 이 안에 있어 display:none 이면 확대 지도 색이 사라짐 */
+    .bstores .kmap-main{position:absolute;left:0;top:0;width:1px;height:1px;margin:0;overflow:hidden;visibility:hidden}
+    .bstores .kmap-head{position:static;margin:0 0 4px;text-align:center}
+    .bstores .kmap-head b{display:inline;margin-right:8px;font-size:15px}
+    .bstores .kmap-inset{position:relative;left:auto;top:auto;width:100%;height:auto;margin:0;padding:0;overflow:hidden;border:0;border-radius:10px;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+    /* 높이를 줄이고 폭은 채움: 지도 자료가 전국분이라 좌우로 넘친 만큼 주변 지역이 이어서 보임 */
+    .bstores .kmap-zoom{width:100%;height:min(320px,46vh);overflow:visible}
+    .bstores .kmap-zoom .pin text{font-size:2.6px}
+    .bstores .kmap-legend{position:static;width:fit-content;margin:4px auto 0;padding:2px 10px;transform:none;font-size:12.5px}
+    .m-near{display:flex;flex:1;align-items:center;justify-content:center;min-height:42px;padding:0;border:2px solid #17608a;border-radius:10px;background:#e3f6fd;color:#17608a;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer}
+    .m-near.on{background:#17608a;color:#fff}
+    .m-near-msg{display:block;margin-top:6px;font-size:13px;color:var(--ink-2);text-align:center}
+    .m-near-msg:empty{display:none}
+    .bstores .store .m-dist{display:inline;font-weight:800;color:#17608a}
+    /* 매장 안내: 큰 지도·사진은 빼고 전체/24시 탭 + 짧은 카드(전화하기·찾아오는 지도) */
+    .bstores{padding:10px 0 20px}
+    .bstores .eyebrow,.bstores .sub,.bstores .store .store-photo,.bstores .store .more,.bstores .store .tel,.bstores .store .hours b,.bstores .store .m-brand{display:none}
+    .bstores h2{font-size:18px;line-height:1.35;letter-spacing:0}
+    .m-chips{display:flex;gap:6px;margin-top:8px}
+    .m-chip{flex:1;display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:10px;border:2px solid var(--ink);background:#fff;color:var(--ink);font-size:15px;font-weight:800;text-decoration:none}
+    .m-chip.on{background:var(--ink);color:#fff}
+    /* 매장 한 곳 = 짧은 한 줄(왼쪽 이름·주소·시간, 오른쪽 버튼 2개): 8곳이 한 화면에 들어오게 */
+    .bstores .store-grid{margin-top:8px;grid-template-columns:1fr;gap:5px}
+    .bstores .store{border-radius:10px;box-shadow:none}
+    .bstores .store .body{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:8px;align-items:center;padding:6px 8px 6px 12px}
+    .bstores .store h4{display:flex;grid-column:1;align-items:center;gap:6px;min-width:0;font-size:17px;line-height:1.3}
+    .bstores .store .m-sname{min-width:0;word-break:keep-all;overflow-wrap:anywhere}
+    .bstores .store .badge{flex:none;margin:0;padding:2px 6px;font-size:11.5px;box-shadow:none}
+    /* 주소·운영시간은 잘리지 않게 필요하면 두 줄로 */
+    .bstores .store .addr,.bstores .store .hours{grid-column:1;margin-top:2px;font-size:14px;line-height:1.35;word-break:keep-all;overflow-wrap:anywhere}
+    /* 글자 칸을 넓히려고 버튼 2개는 오른쪽에 위아래로 */
+    .m-acts{display:grid;grid-column:2;grid-row:1 / span 3;grid-template-columns:84px;gap:4px;margin:0}
+    .m-act{display:flex;align-items:center;justify-content:center;min-height:36px;border-radius:8px;background:var(--ink);color:#fff;font-size:12px;font-weight:800;text-align:center;text-decoration:none;white-space:nowrap}
+    .m-act.m-call{background:#1f7fb0}
+    @media (max-width:380px){
+      .m-acts{grid-template-columns:80px}
+      .m-near,.m-chip{font-size:14px}
+    }
+    /* 4대 안전무상점검: 제목·설명·점검표·버튼 순서로 한 화면에 들어오게 글자와 칸을 줄임 */
+    #safety{padding:18px 0 20px}
+    #safety .sf-grid{display:flex;flex-direction:column;gap:0}
+    #safety .sf-grid > div:first-child{display:contents}
+    #safety .sf-grid h2,#safety .sub{align-self:stretch}
+    #safety .sf-grid h2{order:1;font-size:min(22px,5.4vw);line-height:1.35;letter-spacing:0}
+    #safety .sub{order:2;margin-top:8px;font-size:min(14px,3.6vw);line-height:1.55}
+    #safety .sf-card{order:3;align-self:stretch;margin-top:14px;padding:16px 16px 4px;border-radius:16px}
+    #safety .sf-head{padding-bottom:10px}
+    #safety .sf-head h3{font-size:19px}
+    #safety .sf-head p{margin-top:2px;font-size:14px}
+    #safety .sf-status{padding:4px 10px;font-size:13px}
+    #safety .sf-row{gap:12px;padding:11px 0}
+    #safety .sf-ic{flex:0 0 30px;width:30px;height:30px}
+    #safety .sf-ic svg{width:15px;height:15px}
+    #safety .sf-row b{font-size:17px}
+    #safety .sf-row div span{margin-top:1px;font-size:14px;line-height:1.45;white-space:normal}
+    #safety .sf-tag{display:none}
+    /* 카톡점검알림: 바깥 큰 카드를 없애고 제목·설명·3단계·알림톡 예시가 한 화면에 들어오게 줄임 */
+    #kakao{padding:14px 0 20px}
+    #kakao .kakao{padding:0;border-radius:0;background:none;box-shadow:none;overflow:visible}
+    #kakao .kakao::before{display:none}
+    #kakao .kakao .in{grid-template-columns:minmax(0,1fr);gap:12px}
+    #kakao .kakao .eyebrow{margin-bottom:6px;padding:3px 10px;font-size:13px;letter-spacing:0}
+    #kakao .kakao h2{font-size:min(19px,4.7vw);line-height:1.38;letter-spacing:0}
+    #kakao .kakao .sub{margin-top:6px;font-size:min(14px,3.6vw);line-height:1.5}
+    #kakao .steps{margin-top:10px;gap:6px}
+    #kakao .kakao .step{gap:10px;padding:9px 12px;border-radius:12px;font-size:min(14px,3.5vw);line-height:1.35;word-break:keep-all}
+    #kakao .kakao .step b{flex:0 0 24px;width:24px;height:24px;font-size:13px}
+    #kakao .phone.kt{border-radius:16px;box-shadow:0 8px 20px rgba(21,22,31,.12)}
+    #kakao .kt-head{padding:8px 12px}
+    #kakao .kt-head .kt-av{flex:0 0 30px;width:30px;height:30px;border-radius:10px}
+    #kakao .kt-head b{font-size:14px}
+    #kakao .kt-head small{margin-top:0;font-size:12px}
+    #kakao .kt-chat{padding:10px 10px 8px}
+    #kakao .kt-av.sm,#kakao .kt-name{display:none}
+    #kakao .kt-col{flex:1;align-items:stretch}
+    #kakao .kt-bubble{max-width:none;padding:9px 12px;font-size:min(14px,3.6vw);line-height:1.5}
+    #kakao .kt-btn{max-width:none;margin-top:5px;padding:8px 0;font-size:14px}
+    #kakao .kt-time{margin-top:3px;font-size:12px}
+    #safety .btn-main{order:4;display:flex;justify-content:center;align-self:stretch;margin-top:14px;padding:15px 20px;border-radius:14px;font-size:18px;text-align:center}
+    .top .wrap{height:64px}
+    .deck{top:67px}
+    .top .menu a.cta,.top .menu a.urgent{display:none}
+    .top .menu a.m-name{display:block;padding:0;border:0;background:none;font-size:22px;font-weight:800;color:#fff}
+    .hero .hero-grid{display:none}
+    .page.hero{padding:0;align-items:stretch}
+    .m-home{display:flex;flex-direction:column;justify-content:center;gap:14px;box-sizing:border-box;width:100%;min-height:100%;padding:20px 28px}
+    .m-home img{display:block;width:132px;height:auto;margin:0 auto 8px;mix-blend-mode:multiply}
+    .m-btn{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;min-height:72px;padding:12px;border-radius:14px;background:var(--ink);color:#fff;font-size:21px;font-weight:800;text-align:center;text-decoration:none;box-shadow:0 8px 18px rgba(21,22,31,.16)}
+    .m-btn.m-urgent{background:#d9401f}
   }
 
   /* ===== 화면 크기에 맞춤 ===== */
@@ -525,6 +622,7 @@ html,body{height:100%;overflow:hidden}
   <div class="wrap">
     <nav class="menu">
       <a class="menu-mark" href="#top" aria-label="카우타이어 메인 페이지로 가기"><img src="images/mascot.jpg" alt="카우타이어 마크"></a>
+      <a class="m-name" href="#top">카우타이어</a>
       <a class="cta" href="#bottom">가까운 매장 찾기</a>
       <a class="urgent" href="#bottom" data-filter="24h">24시간 영업 긴급실</a>
       <a href="#bottom">매장 안내</a>
@@ -536,6 +634,13 @@ html,body{height:100%;overflow:hidden}
 
 <main class="deck" id="deck"><div class="track" id="track">
 <section class="page hero" id="top">
+  <nav class="m-home" aria-label="빠른 메뉴">
+    <img src="logo.jpg" alt="카우타이어 마스코트">
+    <a class="m-btn" href="#bottom" data-near="1">가까운 매장 찾기</a>
+    <a class="m-btn m-urgent" href="#bottom" data-filter="24h">24시간 영업 긴급실</a>
+    <a class="m-btn" href="#safety">4대 안전무상점검</a>
+    <a class="m-btn" href="#kakao">카톡 점검 알림</a>
+  </nav>
   <div class="wrap hero-grid">
     <div>
       <h1>타이어 관리가 더 중요합니다 !<br>저희는 타이어 판매 끝이 아닌 시작입니다</h1>
@@ -664,6 +769,12 @@ html,body{height:100%;overflow:hidden}
       <span class="eyebrow">매장 안내</span>
       <h2>가까운 카우타이어 매장</h2>
       <p class="sub">매장을 누르면 지도와 상세 정보를 볼 수 있어요.</p>
+      <div class="m-chips">
+        <a class="m-chip on" href="#bottom" data-filter="all">전체 매장</a>
+        <a class="m-chip" href="#bottom" data-filter="24h">24시 긴급실</a>
+        <button class="m-near" type="button" data-near="1">가까운 순</button>
+      </div>
+      <p class="m-near-msg" id="mNearMsg" aria-live="polite"></p>
 <div class="kmap2" aria-label="카우타이어 매장 위치 지도">
   <div class="kmap-head"><b>매장 위치 지도</b><span id="kmapCount"></span></div>
   <svg class="kmap-conn" viewBox="0 0 855 680" aria-hidden="true">
@@ -965,6 +1076,9 @@ html,body{height:100%;overflow:hidden}
     var iG=replaceGroup(zoom,'ipins');
     var eG=replaceGroup(zoom,'epins');
     var k24=0;
+    /* 휴대폰은 지도가 낮아 이름표를 키우고, 이름표가 옆 매장 점을 가리면 반대쪽으로 놓는다 (PC 는 그대로) */
+    var phone=window.matchMedia("(max-width:600px)").matches, k=phone?1.18:1;
+    var pts=stores.filter(function(s){ return typeof s.lat==="number" && typeof s.lng==="number"; }).map(function(s){ return proj(s.lng,s.lat); });
     stores.forEach(function(st){
       if(st.h24) k24++;
       if(typeof st.lat!=="number" || typeof st.lng!=="number") return;
@@ -973,12 +1087,13 @@ html,body{height:100%;overflow:hidden}
       var inside = q[0]>=X0 && q[0]<=X1 && q[1]>=Y0 && q[1]<=Y1;
       if(inside){
         var g=el('g',{'class':'pin '+(st.h24?'pin24':'pin')});
-        var w=2.25*st.name.replace('카우타이어 ','').length+1.8;
+        var w=(2.25*st.name.replace('카우타이어 ','').length+1.8)*k;
         g.appendChild(el('circle',{'class':'ring',cx:q[0].toFixed(2),cy:q[1].toFixed(2),r:'1.1'}));
         g.appendChild(el('circle',{'class':'dot',cx:q[0].toFixed(2),cy:q[1].toFixed(2),r:'0.95'}));
-        var flip = q[0]+1.5+w > X1+1;
-        g.appendChild(el('rect',{'class':'tag',x:(flip? q[0]-1.5-w : q[0]+1.5).toFixed(2),y:(q[1]-1.55).toFixed(2),width:w.toFixed(2),height:'2.9',rx:'1.45'}));
-        g.appendChild(el('text',{x:(flip? q[0]-2.4 : q[0]+2.4).toFixed(2),y:(q[1]+0.72).toFixed(2),'text-anchor':flip?'end':'start'},st.name.replace('카우타이어 ','')));
+        var covers = phone && pts.some(function(p){ return p[0]>q[0]+1 && p[0]<q[0]+1.5+w && Math.abs(p[1]-q[1])<3.5; });
+        var flip = phone ? covers : q[0]+1.5+w > X1+1;
+        g.appendChild(el('rect',{'class':'tag',x:(flip? q[0]-1.5-w : q[0]+1.5).toFixed(2),y:(q[1]-1.55*k).toFixed(2),width:w.toFixed(2),height:(2.9*k).toFixed(2),rx:(1.45*k).toFixed(2)}));
+        g.appendChild(el('text',{x:(flip? q[0]-2.4 : q[0]+2.4).toFixed(2),y:(q[1]+0.72*k).toFixed(2),'text-anchor':flip?'end':'start'},st.name.replace('카우타이어 ','')));
         iG.appendChild(g);
       } else {
         var cx=(X0+X1)/2, cy=(Y0+Y1)/2;
@@ -1017,29 +1132,77 @@ html,body{height:100%;overflow:hidden}
   var $=function(id){ return document.getElementById(id); };
 
   function mapUrl(name){ return "https://map.naver.com/p/search/"+encodeURIComponent(name); }
-  function storeName(card){ var img=card.querySelector("img.store-photo"); return img ? img.alt : ""; }
+  /* 네이버 플레이스에 등록을 확인한 매장(매장명 그대로). 여기 있으면 매장명으로 플레이스를 바로 열고,
+     없는 매장은 등록 전에도 위치가 나오도록 주소로 연다. 새 매장이 등록되면 이 목록에 이름을 추가한다 */
+  var NAVER_PLACES=["카우타이어 오산점","카우타이어 평택점","카우타이어 동탄역점","카우타이어 분당수지점","카우타이어 안양중앙점","카우타이어 신촌점","카우타이어 의왕IC점","카우타이어 동작대교점"];
+  function storeMapUrl(st){ return mapUrl(NAVER_PLACES.indexOf(st.name)>=0 ? st.name : st.addr); }
   function makeLink(card){ card.tabIndex=0; card.setAttribute("role","link"); }
   grid.addEventListener("click", function(e){
+    if(e.target.closest(".m-acts")) return;
     var c=e.target.closest(".store"); if(!c) return;
-    window.open(mapUrl(storeName(c)), "_blank", "noopener");
+    window.open(c.dataset.map, "_blank", "noopener");
   });
   grid.addEventListener("keydown", function(e){
-    if(e.key!=="Enter") return;
+    if(e.key!=="Enter" || e.target.closest(".m-acts")) return;
     var c=e.target.closest(".store"); if(!c) return;
-    e.preventDefault(); window.open(mapUrl(storeName(c)), "_blank", "noopener");
+    e.preventDefault(); window.open(c.dataset.map, "_blank", "noopener");
   });
 
+  /* 휴대폰 「가까운 매장」: 위치는 이 화면에서 거리 계산에만 쓰고 저장·전송하지 않는다 */
+  var myPos=null;
+  function distKm(st){
+    if(!myPos || typeof st.lat!=="number" || typeof st.lng!=="number" || !isFinite(st.lat) || !isFinite(st.lng)) return null;
+    var rad=Math.PI/180, dLat=(st.lat-myPos.lat)*rad, dLng=(st.lng-myPos.lng)*rad;
+    var h=Math.pow(Math.sin(dLat/2),2)+Math.cos(myPos.lat*rad)*Math.cos(st.lat*rad)*Math.pow(Math.sin(dLng/2),2);
+    return 6371*2*Math.asin(Math.min(1,Math.sqrt(h)));
+  }
+  function byDistance(list){
+    if(!myPos) return list;
+    return list.slice().sort(function(a,b){
+      var da=distKm(a), db=distKm(b);
+      return (da===null ? Infinity : da)-(db===null ? Infinity : db);
+    });
+  }
+  function nearMsg(t){ var m=$("mNearMsg"); if(m) m.textContent=t; }
+  function findNear(){
+    if(!navigator.geolocation){ nearMsg("이 기기에서는 위치를 확인할 수 없어요."); return; }
+    nearMsg("내 위치를 확인하고 있어요…");
+    navigator.geolocation.getCurrentPosition(function(p){
+      myPos={lat:p.coords.latitude, lng:p.coords.longitude};
+      redraw();
+      nearMsg("");
+      document.querySelectorAll(".m-near").forEach(function(b){ b.classList.add("on"); });
+    }, function(err){
+      nearMsg(err.code===1 ? "위치 권한을 허용하면 가까운 순서로 볼 수 있어요." : "위치를 확인하지 못해 전체 매장을 보여드려요.");
+    }, {enableHighAccuracy:false, timeout:10000, maximumAge:300000});
+  }
+  document.querySelectorAll("[data-near]").forEach(function(el){ el.addEventListener("click", findNear); });
+
   function render(st){
-    var a=document.createElement("article"); a.className="store"; makeLink(a);
+    var a=document.createElement("article"); a.className="store"; a.dataset.map=storeMapUrl(st); makeLink(a);
     var img=document.createElement("img"); img.className="store-photo"; img.src=PHOTO; img.alt=st.name; a.appendChild(img);
     var body=document.createElement("div"); body.className="body";
-    var h=document.createElement("h4"); h.appendChild(document.createTextNode(st.name+" "));
+    var h=document.createElement("h4");
+    /* 휴대폰 목록은 「카우타이어」를 숨겨 매장명만 짧게 (PC 는 전체 이름 그대로) */
+    var sn=document.createElement("span"); sn.className="m-sname";
+    var brand=/^카우타이어\s+/.exec(st.name);
+    if(brand){ var bs=document.createElement("span"); bs.className="m-brand"; bs.textContent=brand[0]; sn.appendChild(bs); }
+    sn.appendChild(document.createTextNode(brand ? st.name.slice(brand[0].length) : st.name));
+    h.appendChild(sn); h.appendChild(document.createTextNode(" "));
     if(st.h24){ var bd=document.createElement("span"); bd.className="badge"; bd.textContent="24시 긴급실"; h.appendChild(bd); }
     body.appendChild(h);
     var tel=document.createElement("div"); tel.className="tel"; tel.textContent=st.tel; body.appendChild(tel);
     var ad=document.createElement("p"); ad.className="addr"; ad.textContent=st.addr; body.appendChild(ad);
-    var hr=document.createElement("p"); hr.className="hours"; var b=document.createElement("b"); b.textContent="운영시간"; hr.appendChild(b); hr.appendChild(document.createTextNode(" "+st.hours)); body.appendChild(hr);
+    var hr=document.createElement("p"); hr.className="hours";
+    var km=distKm(st);
+    if(km!==null){ var ds=document.createElement("span"); ds.className="m-dist"; ds.textContent="약 "+Math.max(1,Math.round(km))+"km · "; hr.appendChild(ds); }
+    var b=document.createElement("b"); b.textContent="운영시간"; hr.appendChild(b); hr.appendChild(document.createTextNode(" "+st.hours)); body.appendChild(hr);
     var more=document.createElement("span"); more.className="more"; more.textContent="지도 · 상세 보기 →"; body.appendChild(more);
+    /* 휴대폰 전용 버튼: 전화 바로 걸기 · 네이버 지도(길찾기·내비게이션은 지도 화면에서) */
+    var acts=document.createElement("div"); acts.className="m-acts";
+    var call=document.createElement("a"); call.className="m-act m-call"; call.href="tel:"+(st.tel.match(/[0-9+][0-9\-\s]{6,}[0-9]/)||[st.tel])[0].replace(/[^0-9+]/g,""); call.textContent="전화하기"; acts.appendChild(call);
+    var go=document.createElement("a"); go.className="m-act"; go.href=a.dataset.map; go.target="_blank"; go.rel="noopener"; go.textContent="찾아오는 지도"; acts.appendChild(go);
+    body.appendChild(acts);
     a.appendChild(body); return a;
   }
 
@@ -1093,7 +1256,7 @@ html,body{height:100%;overflow:hidden}
       var cnt=$("kmapCount"); if(cnt) cnt.textContent="매장 정보를 불러오지 못했습니다";
       return;
     }
-    var show=visibleStores();
+    var show=byDistance(visibleStores());
     show.forEach(function(st){ grid.appendChild(render(st)); });
     if(window.cowMap) window.cowMap.draw(show);
     if(window.cowReapplyFilter) window.cowReapplyFilter();
@@ -1292,10 +1455,15 @@ html,body{height:100%;overflow:hidden}
       var is24=!!c.querySelector(".badge");
       c.hidden = (mode==="24h" && !is24);
     });
+    document.querySelectorAll(".m-chip").forEach(function(ch){ ch.classList.toggle("on", ch.dataset.filter===mode); });
   }
   window.cowReapplyFilter=function(){ apply(current); };
   document.querySelectorAll('a[href="#bottom"]').forEach(function(a){
-    a.addEventListener("click", function(){ apply(a.dataset.filter==="24h" ? "24h" : "all"); });
+    a.addEventListener("click", function(){
+      apply(a.dataset.filter==="24h" ? "24h" : "all");
+      /* 휴대폰: 매장 안내로 올 때는 항상 목록 맨 위부터 */
+      if(window.matchMedia("(max-width:600px)").matches) document.getElementById("bottom").scrollTop=0;
+    });
   });
 })();
 </script>
