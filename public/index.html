@@ -537,6 +537,16 @@ html,body{height:100%;overflow:hidden}
   .top .menu a.urgent{background:#ff5a36;border-color:#ff5a36;color:#fff;box-shadow:0 8px 20px rgba(255,90,54,.4)}
   .top .menu a.urgent:hover{background:#fff;color:#ff5a36;border-color:#fff}
   .store .badge{background:#ff5a36;color:#fff;box-shadow:0 4px 10px rgba(255,90,54,.3)}
+  /* PC·태블릿 매장 카드 줄 맞춤: 이름은 「카우타이어 / 매장명」 두 줄, 24시 배지는 매장명 바로 아래(배지 없는 카드도 그 높이를 비워 둠: 이름 65px + 배지 34px), 주소 두 줄 높이 확보, 「지도·상세 보기」는 카드 맨 아래 */
+  @media (min-width:601px){
+    .bstores .store{display:flex;flex-direction:column}
+    .bstores .store .body{flex:1;display:flex;flex-direction:column}
+    .bstores .store h4{min-height:99px;line-height:1.3}
+    .bstores .store .m-brand{display:block}
+    .bstores .store .badge{display:block;width:fit-content;margin:6px 0 0;line-height:20px}
+    .bstores .store .addr{min-height:3.2em;word-break:keep-all}
+    .bstores .store .more{align-self:flex-start;margin-top:auto;padding-top:14px}
+  }
   /* 매장 지도: 대한민국 지도 옆에 서울·경기 확대 유리카드, 연결선, 펄스 핀 */
   .kmap2{position:relative;width:100%;height:680px;margin:8px auto 44px;border-radius:28px;overflow:hidden;background:radial-gradient(circle at 18% 14%,#ffffff 0,#eef9fe 42%,#c9ecfa 100%);border:1px solid #d3eaf6;box-shadow:0 30px 60px rgba(70,150,200,.20)}
   .kmap2::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(31,127,176,.16) 1px,transparent 1.3px);background-size:18px 18px;pointer-events:none}
