@@ -357,7 +357,7 @@ html,body{height:100%;overflow:hidden}
   }
 
   /* ===== 휴대폰 첫 화면: 마스코트 + 큰 버튼 4개만 (600px 이하). PC·태블릿은 기존 히어로 그대로 ===== */
-  .m-home,.top .menu a.m-name,.m-chips,.m-acts,.m-near,.m-near-msg,.m-dist{display:none}
+  .m-home,.top .menu a.m-name,.m-chips,.m-acts,.m-near,.m-near-msg,.m-dist,.p-dist{display:none}
   @media (max-width:600px){
     /* 매장 위치 지도: 항상 펼침. 서울·경기만 화면 폭에 맞춰 낮게 (.bstores 를 붙여 아래 .kmap 기본 규칙보다 우선) */
     .bstores .kmap2{height:auto;max-width:none;margin:6px 0 0;padding:6px;border-radius:12px;box-shadow:none}
@@ -543,7 +543,17 @@ html,body{height:100%;overflow:hidden}
     .bstores .store .body{flex:1;display:flex;flex-direction:column}
     .bstores .store h4{min-height:99px;line-height:1.3}
     .bstores .store .m-brand{display:block}
-    .bstores .store .badge{display:block;width:fit-content;margin:6px 0 0;line-height:20px}
+    .bstores .store .m-sname{display:block}
+    .bstores .store .badge{display:inline-block;margin:6px 8px 0 0;line-height:20px;vertical-align:middle}
+    /* 거리: 24시 배지와 같은 줄(배지 없는 카드는 그 줄 맨 앞) */
+    .bstores .store .p-dist{display:inline-block;margin-top:6px;font-size:17px;font-weight:800;line-height:28px;color:#17608a;vertical-align:middle;white-space:nowrap}
+    /* PC·태블릿은 필터 칩 없이 「가까운 순」 버튼과 안내 문구만 */
+    .m-chips{display:flex;margin-top:16px}
+    .m-chip{display:none}
+    .m-near{display:inline-flex;align-items:center;justify-content:center;padding:10px 26px;border:2px solid #17608a;border-radius:999px;background:#e3f6fd;color:#17608a;font-family:inherit;font-size:18px;font-weight:800;cursor:pointer}
+    .m-near.on{background:#17608a;color:#fff}
+    .m-near-msg{display:block;margin:8px 0;font-size:16px;color:var(--ink-2)}
+    .m-near-msg:empty{display:none}
     .bstores .store .addr{min-height:3.2em;word-break:keep-all}
     .bstores .store .more{align-self:flex-start;margin-top:auto;padding-top:14px}
   }
@@ -633,7 +643,7 @@ html,body{height:100%;overflow:hidden}
     <nav class="menu">
       <a class="menu-mark" href="#top" aria-label="카우타이어 메인 페이지로 가기"><img src="images/mascot.jpg" alt="카우타이어 마크"></a>
       <a class="m-name" href="#top">카우타이어</a>
-      <a class="cta" href="#bottom">가까운 매장 찾기</a>
+      <a class="cta" href="#bottom" data-near="1">가까운 매장 찾기</a>
       <a class="urgent" href="#bottom" data-filter="24h">24시간 영업 긴급실</a>
       <a href="#bottom">매장 안내</a>
       <a href="#safety">4대 안전무상점검</a>
@@ -655,7 +665,7 @@ html,body{height:100%;overflow:hidden}
     <div>
       <h1>타이어 관리가 더 중요합니다 !<br>저희는 타이어 판매 끝이 아닌 시작입니다</h1>
       <div class="btns">
-        <a class="btn btn-main" href="#bottom">가까운 매장 찾기 →</a>
+        <a class="btn btn-main" href="#bottom" data-near="1">가까운 매장 찾기 →</a>
         <a class="btn btn-sub" href="#safety">4대 안전무상점검 보기</a>
       </div>
     </div>
@@ -1158,7 +1168,7 @@ html,body{height:100%;overflow:hidden}
     e.preventDefault(); window.open(c.dataset.map, "_blank", "noopener");
   });
 
-  /* 휴대폰 「가까운 매장」: 위치는 이 화면에서 거리 계산에만 쓰고 저장·전송하지 않는다 */
+  /* 「가까운 매장」(PC·휴대폰 공통): 위치는 이 화면에서 거리 계산에만 쓰고 저장·전송하지 않는다 */
   var myPos=null;
   function distKm(st){
     if(!myPos || typeof st.lat!=="number" || typeof st.lng!=="number" || !isFinite(st.lat) || !isFinite(st.lng)) return null;
@@ -1182,6 +1192,9 @@ html,body{height:100%;overflow:hidden}
       redraw();
       nearMsg("");
       document.querySelectorAll(".m-near").forEach(function(b){ b.classList.add("on"); });
+      /* PC·태블릿은 지도 아래 카드가 화면 밖이라, 정렬된 카드가 바로 보이게 페이지 안에서만 내려 줌 */
+      var pg=grid.closest(".page");
+      if(pg && window.matchMedia("(min-width:601px)").matches) pg.scrollTo({top:pg.scrollTop+grid.getBoundingClientRect().top-pg.getBoundingClientRect().top-16,behavior:"smooth"});
     }, function(err){
       nearMsg(err.code===1 ? "위치 권한을 허용하면 가까운 순서로 볼 수 있어요." : "위치를 확인하지 못해 전체 매장을 보여드려요.");
     }, {enableHighAccuracy:false, timeout:10000, maximumAge:300000});
@@ -1200,11 +1213,13 @@ html,body{height:100%;overflow:hidden}
     sn.appendChild(document.createTextNode(brand ? st.name.slice(brand[0].length) : st.name));
     h.appendChild(sn); h.appendChild(document.createTextNode(" "));
     if(st.h24){ var bd=document.createElement("span"); bd.className="badge"; bd.textContent="24시 긴급실"; h.appendChild(bd); }
+    var km=distKm(st);
+    /* PC·태블릿 거리 표시는 배지 줄에, 휴대폰은 아래 운영시간 줄에 */
+    if(km!==null){ var pd=document.createElement("span"); pd.className="p-dist"; pd.textContent="약 "+Math.max(1,Math.round(km))+"km"; h.appendChild(pd); }
     body.appendChild(h);
     var tel=document.createElement("div"); tel.className="tel"; tel.textContent=st.tel; body.appendChild(tel);
     var ad=document.createElement("p"); ad.className="addr"; ad.textContent=st.addr; body.appendChild(ad);
     var hr=document.createElement("p"); hr.className="hours";
-    var km=distKm(st);
     if(km!==null){ var ds=document.createElement("span"); ds.className="m-dist"; ds.textContent="약 "+Math.max(1,Math.round(km))+"km · "; hr.appendChild(ds); }
     var b=document.createElement("b"); b.textContent="운영시간"; hr.appendChild(b); hr.appendChild(document.createTextNode(" "+st.hours)); body.appendChild(hr);
     var more=document.createElement("span"); more.className="more"; more.textContent="지도 · 상세 보기 →"; body.appendChild(more);
